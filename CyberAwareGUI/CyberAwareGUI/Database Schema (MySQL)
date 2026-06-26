@@ -1,0 +1,19 @@
+-- Create database
+CREATE DATABASE IF NOT EXISTS cyberaware;
+USE cyberaware;
+
+-- Create Tasks table
+CREATE TABLE IF NOT EXISTS Tasks (
+    Id INT PRIMARY KEY AUTO_INCREMENT,
+    Description VARCHAR(500) NOT NULL,
+    CreatedDate DATETIME NOT NULL,
+    ReminderDate DATETIME NULL,
+    IsCompleted BOOLEAN DEFAULT FALSE,
+    CompletedDate DATETIME NULL
+);
+
+-- Insert sample tasks
+INSERT INTO Tasks (Description, CreatedDate, ReminderDate, IsCompleted) VALUES
+('Enable Two-Factor Authentication on Google Account', NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), FALSE),
+('Review privacy settings on social media', NOW(), DATE_ADD(NOW(), INTERVAL 3 DAY), FALSE),
+('Update password for email account', NOW(), DATE_ADD(NOW(), INTERVAL 5 DAY), FALSE);
