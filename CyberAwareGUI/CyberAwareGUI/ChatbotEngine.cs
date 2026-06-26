@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Media;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace CyberAware
 {
@@ -11,6 +12,7 @@ namespace CyberAware
         public event Action<string>? OnResponse;
         public event Action<string, string>? OnUserInfoUpdated;
         public event Action<string>? OnSentimentDetected;
+        public event Action<string>? OnActivityLogged;
 
         public string UserName { get; private set; } = "";
         public string UserInterest { get; private set; } = "";
@@ -18,10 +20,20 @@ namespace CyberAware
         private string? currentTopic;
         private Random random = new Random();
         private Dictionary<string, List<string>> responses = new Dictionary<string, List<string>>();
+        private List<string> activityLog = new List<string>();
+        private const int MAX_LOG_ENTRIES = 50;
+
+        // Task management
+        private TaskManager taskManager;
+
+        // Quiz engine
+        private QuizEngine quizEngine;
 
         public ChatbotEngine()
         {
             InitializeResponses();
+            taskManager = new TaskManager(this);
+            quizEngine = new QuizEngine(this);
         }
 
         private void InitializeResponses()
@@ -75,6 +87,25 @@ namespace CyberAware
         {
             string lowerInput = userInput.ToLower().Trim();
 
+            // Check for activity log request first
+            if (IsActivityLogRequest(lowerInput))
+            {
+                ShowActivityLog();
+                return;
+            }
+
+            // Check for task-related commands
+            if (taskManager.ProcessTaskCommand(lowerInput, waitingForName))
+            {
+                return;
+            }
+
+            // Check for quiz commands
+            if (quizEngine.ProcessQuizCommand(lowerInput, waitingForName))
+            {
+                return;
+            }
+
             if (waitingForName && string.IsNullOrEmpty(UserName))
             {
                 if (IsValidName(userInput))
@@ -82,6 +113,7 @@ namespace CyberAware
                     UserName = CapitalizeName(userInput);
                     OnUserInfoUpdated?.Invoke(UserName, UserInterest);
                     OnResponse?.Invoke($"Hello {UserName}! How can I help you with cybersecurity today?");
+                    LogActivity($"User registered: {UserName}");
                     return;
                 }
                 else
@@ -130,7 +162,7 @@ namespace CyberAware
             // Handle help
             if (lowerInput.Contains("help") || lowerInput.Contains("what can you do"))
             {
-                OnResponse?.Invoke("I can help you with:\n🔐 Password security\n🎣 Phishing scams\n🕵️ Online privacy\n🚨 Scam prevention\n📱 SIM swap protection\n🔒 Two-Factor Authentication\n🌐 Safe browsing\n\nWhat would you like to know?");
+                OnResponse?.Invoke("I can help you with:\n🔐 Password security\n🎣 Phishing scams\n🕵️ Online privacy\n🚨 Scam prevention\n📱 SIM swap protection\n🔒 Two-Factor Authentication\n🌐 Safe browsing\n📋 Task management\n📝 Cybersecurity Quiz\n\nWhat would you like to know?");
                 return;
             }
 
@@ -144,6 +176,61 @@ namespace CyberAware
             // Keyword recognition
             string response = GetKeywordResponse(lowerInput);
             OnResponse?.Invoke(response);
+            LogActivity($"NLP interaction: {userInput}");
+        }
+
+        private bool IsActivityLogRequest(string input)
+        {
+            string[] phrases = {
+                "show activity log",
+                "what have you done",
+                "show log",
+                "activity log",
+                "view log",
+                "what did you do",
+                "show me the log",
+                "activity summary"
+            };
+            return phrases.Any(p => input.Contains(p));
+        }
+
+        private void ShowActivityLog()
+        {
+            if (activityLog.Count == 0)
+            {
+                OnResponse?.Invoke("📋 No activities have been logged yet.");
+                return;
+            }
+
+            int count = Math.Min(10, activityLog.Count);
+            var recentLogs = activityLog.TakeLast(count).ToList();
+
+            string logMessage = "📋 Here's a summary of recent actions:\n\n";
+            for (int i = 0; i < recentLogs.Count; i++)
+            {
+                logMessage += $"{i + 1}. {recentLogs[i]}\n";
+            }
+
+            if (activityLog.Count > 10)
+            {
+                logMessage += $"\n(Showing last 10 of {activityLog.Count} entries)";
+            }
+
+            OnResponse?.Invoke(logMessage);
+        }
+
+        public void LogActivity(string action)
+        {
+            string timestamp = DateTime.Now.ToString("HH:mm:ss");
+            string entry = $"[{timestamp}] {action}";
+            activityLog.Add(entry);
+
+            if (activityLog.Count > MAX_LOG_ENTRIES)
+            {
+                activityLog.RemoveAt(0);
+            }
+
+            OnActivityLogged?.Invoke(entry);
         }
 
         private bool IsValidName(string input)
@@ -228,6 +315,7 @@ namespace CyberAware
             {
                 var responseList = responses[currentTopic];
                 OnResponse?.Invoke(responseList[random.Next(responseList.Count)]);
+                LogActivity($"Follow-up on {currentTopic}");
             }
             else
             {
@@ -243,31 +331,29 @@ namespace CyberAware
                 {
                     currentTopic = category.Key;
                     var responseList = category.Value;
+                    LogActivity($"Keyword detected: {category.Key}");
                     return responseList[random.Next(responseList.Count)];
                 }
             }
 
-            return "I can help with cybersecurity topics like:\n🔐 Passwords\n🎣 Phishing\n🕵️ Privacy\n🚨 Scams\n📱 SIM swap\n🔒 2FA\n🌐 Safe browsing\n\nWhat would you like to know?";
+            return "I can help with cybersecurity topics like:\n🔐 Passwords\n🎣 Phishing\n🕵️ Privacy\n🚨 Scams\n📱 SIM swap\n🔒 2FA\n🌐 Safe browsing\n📋 Tasks\n📝 Quiz\n\nWhat would you like to know?";
         }
 
-        // NEW: Play WAV file instead of speech synthesis
         public void PlayVoiceGreeting()
         {
             try
             {
-                // Look for the audio file in the Audio folder
                 string audioPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Audio", "greeting.wav");
 
                 if (File.Exists(audioPath))
                 {
                     using (var player = new SoundPlayer(audioPath))
                     {
-                        player.PlaySync(); // Plays synchronously (waits for completion)
+                        player.PlaySync();
                     }
                 }
                 else
                 {
-                    // Try alternative paths if not found
                     string[] altPaths = {
                         Path.Combine(Directory.GetCurrentDirectory(), "Audio", "greeting.wav"),
                         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "greeting.wav"),
@@ -290,7 +376,6 @@ namespace CyberAware
 
                     if (!played)
                     {
-                        // Fallback to beep if file not found
                         System.Media.SystemSounds.Beep.Play();
                     }
                 }
@@ -309,5 +394,9 @@ namespace CyberAware
         {
             currentTopic = null;
         }
+
+        public TaskManager GetTaskManager() => taskManager;
+        public QuizEngine GetQuizEngine() => quizEngine;
+        public List<string> GetActivityLog() => activityLog;
     }
 }
