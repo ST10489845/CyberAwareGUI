@@ -103,8 +103,20 @@ namespace CyberAware
             };
 
             var stack = new StackPanel { Margin = new Thickness(12, 8, 12, 8) };
-            stack.Children.Add(new TextBlock { Text = "YOU", Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 180, 216)), FontWeight = FontWeights.Bold, FontSize = 11 });
-            stack.Children.Add(new TextBlock { Text = message, Foreground = System.Windows.Media.Brushes.White, FontSize = 13, TextWrapping = TextWrapping.Wrap });
+            stack.Children.Add(new TextBlock 
+            { 
+                Text = "YOU", 
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 180, 216)), 
+                FontWeight = FontWeights.Bold, 
+                FontSize = 11 
+            });
+            stack.Children.Add(new TextBlock 
+            { 
+                Text = message, 
+                Foreground = System.Windows.Media.Brushes.White, 
+                FontSize = 13, 
+                TextWrapping = TextWrapping.Wrap 
+            });
 
             border.Child = stack;
             ChatMessagesPanel.Children.Add(border);
@@ -122,8 +134,20 @@ namespace CyberAware
             };
 
             var stack = new StackPanel { Margin = new Thickness(12, 8, 12, 8) };
-            stack.Children.Add(new TextBlock { Text = "CYBERAWARE", Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 245, 160)), FontWeight = FontWeights.Bold, FontSize = 11 });
-            stack.Children.Add(new TextBlock { Text = message, Foreground = System.Windows.Media.Brushes.White, FontSize = 13, TextWrapping = TextWrapping.Wrap });
+            stack.Children.Add(new TextBlock 
+            { 
+                Text = "CYBERAWARE", 
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 245, 160)), 
+                FontWeight = FontWeights.Bold, 
+                FontSize = 11 
+            });
+            stack.Children.Add(new TextBlock 
+            { 
+                Text = message, 
+                Foreground = System.Windows.Media.Brushes.White, 
+                FontSize = 13, 
+                TextWrapping = TextWrapping.Wrap 
+            });
 
             border.Child = stack;
             ChatMessagesPanel.Children.Add(border);
@@ -147,7 +171,7 @@ namespace CyberAware
         {
             if (sender is System.Windows.Controls.Button button && button.Tag != null)
             {
-                UserInputBox.Text = $"Tell me about {button.Tag}";
+                UserInputBox.Text = button.Tag.ToString();
                 UserInputBox.Focus();
             }
         }
@@ -164,9 +188,23 @@ namespace CyberAware
             }
         }
 
+        private void ActivityLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (chatbot != null)
+            {
+                UserInputBox.Text = "Show activity log";
+                UserInputBox.Focus();
+                // Auto-process the command
+                _ = ProcessUserInput();
+            }
+        }
+
         private void ClearChat_Click(object sender, RoutedEventArgs e)
         {
-            while (ChatMessagesPanel.Children.Count > 1) ChatMessagesPanel.Children.RemoveAt(1);
+            // Keep only the first message (welcome)
+            while (ChatMessagesPanel.Children.Count > 1) 
+                ChatMessagesPanel.Children.RemoveAt(1);
+            
             waitingForName = true;
             chatbot?.Reset();
             AddBotMessage("Chat cleared! What is your name?");
@@ -188,7 +226,8 @@ namespace CyberAware
             TypingIndicator.Visibility = Visibility.Visible;
             typingTimer?.Start();
 
-            if (chatbot != null) await Task.Run(() => chatbot.ProcessInput(input, waitingForName));
+            if (chatbot != null) 
+                await Task.Run(() => chatbot.ProcessInput(input, waitingForName));
         }
 
         private void ScrollToBottom()
