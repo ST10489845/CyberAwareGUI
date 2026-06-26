@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
@@ -10,6 +10,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="System.Speech" Version="8.0.0" />
+		<PackageReference Include="MySql.Data" Version="8.4.0" />
 	</ItemGroup>
 
 	<!-- Include Audio folder and copy to output -->
