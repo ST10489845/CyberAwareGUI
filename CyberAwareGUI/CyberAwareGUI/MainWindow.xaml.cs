@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,6 +30,7 @@ namespace CyberAware
                 chatbot.OnResponse += Chatbot_OnResponse;
                 chatbot.OnUserInfoUpdated += Chatbot_OnUserInfoUpdated;
                 chatbot.OnSentimentDetected += Chatbot_OnSentimentDetected;
+                chatbot.OnActivityLogged += Chatbot_OnActivityLogged;
             }
             AddBotMessage("Welcome to CyberAware! I am your cybersecurity assistant.\n\nWhat is your name?");
         }
@@ -78,6 +79,15 @@ namespace CyberAware
             Dispatcher.Invoke(() =>
             {
                 SentimentDisplay.Text = sentiment;
+            });
+        }
+
+        private void Chatbot_OnActivityLogged(string activity)
+        {
+            // Optionally handle activity logging in UI
+            Dispatcher.Invoke(() =>
+            {
+                // Could update a log panel if added
             });
         }
 
